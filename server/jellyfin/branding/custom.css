@@ -1,0 +1,58 @@
+/* Lala TV - Custom Jellyfin Branding CSS */
+
+/* Replace Jellyfin logo on login page */
+.adminDrawerLogo img,
+.pageTitleWithDefaultLogo {
+    content: url('/branding/logos/lala-tv-dark.png') !important;
+}
+
+/* Hide "Jellyfin" text from header */
+.headerTabs .pageTitle {
+    visibility: hidden;
+    position: relative;
+}
+.headerTabs .pageTitle::after {
+    content: 'Lala TV';
+    visibility: visible;
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+/* Custom accent color - golden yellow matching logo */
+:root {
+    --theme-primary-color: #F5C518;
+    --theme-primary-color-dark: #D4A810;
+    --theme-primary-color-light: #FFD93D;
+}
+
+/* Login page branding */
+#loginPage .padded-left.padded-right {
+    text-align: center;
+}
+
+/* Splash screen background */
+.splashLogo {
+    background-image: url('/branding/logos/lala-tv-dark.png') !important;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Button accent colors */
+.raised.button-submit,
+.raised.button-accent {
+    background-color: var(--theme-primary-color) !important;
+    color: #000 !important;
+}
+
+/* Progress bar color */
+.mdl-slider::-webkit-slider-thumb,
+.sliderBubble {
+    background-color: var(--theme-primary-color) !important;
+}
+
+/* Selection/highlight color */
+.itemProgressBarForeground {
+    background-color: var(--theme-primary-color) !important;
+}

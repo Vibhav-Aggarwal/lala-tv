@@ -1,0 +1,157 @@
+version: "3.9"
+
+# Lala TV - Self-hosted Netflix
+# Jellyfin + Sonarr + Radarr + Prowlarr + rdt-client + Bazarr + Seerr
+# Deploy on GPU server (gpu-server / 10.0.0.71)
+
+services:
+  # ============================================
+  # JELLYFIN - Media Streaming Server
+  # ============================================
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /opt/jellyfin/config:/config
+      - /opt/jellyfin/cache:/cache
+      - /data/media:/data/media:ro
+      - /opt/jellyfin/iptv:/opt/iptv:ro
+      - /opt/jellyfin/epg:/opt/epg:ro
+      - /opt/jellyfin/recordings:/opt/recordings
+      - ./jellyfin/branding:/branding:ro
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128  # AMD RX 570 VA-API
+    environment:
+      - JELLYFIN_PublishedServerUrl=https://tv.lala.city
+    group_add:
+      - "render"
+      - "video"
+
+  # ============================================
+  # SONARR - TV Shows Automation
+  # ============================================
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /opt/lala-tv/sonarr:/config
+      - /data:/data
+    ports:
+      - "8989:8989"
+    networks:
+      - lala-tv
+
+  # ============================================
+  # RADARR - Movies Automation
+  # ============================================
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /opt/lala-tv/radarr:/config
+      - /data:/data
+    ports:
+      - "7878:7878"
+    networks:
+      - lala-tv
+
+  # ============================================
+  # PROWLARR - Indexer Management
+  # ============================================
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /opt/lala-tv/prowlarr:/config
+    ports:
+      - "9696:9696"
+    networks:
+      - lala-tv
+
+  # ============================================
+  # RDT-CLIENT - Real-Debrid Torrent Client
+  # Replaces qBittorrent, acts as qBit API proxy
+  # ============================================
+  rdt-client:
+    image: rogerfar/rdtclient:latest
+    container_name: rdt-client
+    restart: unless-stopped
+    volumes:
+      - /opt/lala-tv/rdt-client:/data/db
+      - /data/torrents:/data/downloads
+    ports:
+      - "6500:6500"
+    networks:
+      - lala-tv
+
+  # ============================================
+  # BAZARR - Automated Subtitle Downloads
+  # ============================================
+  bazarr:
+    image: linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /opt/lala-tv/bazarr:/config
+      - /data/media:/data/media
+    ports:
+      - "6767:6767"
+    networks:
+      - lala-tv
+
+  # ============================================
+  # FLARESOLVERR - Cloudflare Bypass for Indexers
+  # ============================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Asia/Kolkata
+    ports:
+      - "8191:8191"
+    networks:
+      - lala-tv
+
+  # ============================================
+  # SEERR - Media Request Management UI
+  # ============================================
+  seerr:
+    image: ghcr.io/seerr/seerr:latest
+    container_name: seerr
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
+    volumes:
+      - /opt/lala-tv/seerr:/app/config
+    ports:
+      - "5055:5055"
+    networks:
+      - lala-tv
+
+networks:
+  lala-tv:
+    name: lala-tv
+    driver: bridge
