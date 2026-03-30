@@ -1,34 +1,13 @@
-version: "3.9"
-
-# Lala TV - Self-hosted Netflix
-# Jellyfin + Sonarr + Radarr + Prowlarr + rdt-client + Bazarr + Seerr
-# Deploy on GPU server (gpu-server / 10.0.0.71)
+# Lala TV - Arr Stack
+# Deploy on GPU server (gpu-server)
+# Jellyfin already runs via systemd (jellyfin-docker.service) - NOT managed here
+#
+# Media paths:
+#   /mnt/media-archive/Movies    → Radarr root + Jellyfin movie library
+#   /mnt/media-archive/TV Series → Sonarr root + Jellyfin TV library
+#   /mnt/media-archive/Downloads → rdt-client downloads (temp before import)
 
 services:
-  # ============================================
-  # JELLYFIN - Media Streaming Server
-  # ============================================
-  jellyfin:
-    image: jellyfin/jellyfin:latest
-    container_name: jellyfin
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - /opt/jellyfin/config:/config
-      - /opt/jellyfin/cache:/cache
-      - /data/media:/data/media:ro
-      - /opt/jellyfin/iptv:/opt/iptv:ro
-      - /opt/jellyfin/epg:/opt/epg:ro
-      - /opt/jellyfin/recordings:/opt/recordings
-      - ./jellyfin/branding:/branding:ro
-    devices:
-      - /dev/dri/renderD128:/dev/dri/renderD128  # AMD RX 570 VA-API
-    environment:
-      - JELLYFIN_PublishedServerUrl=https://tv.lala.city
-    group_add:
-      - "render"
-      - "video"
-
   # ============================================
   # SONARR - TV Shows Automation
   # ============================================
@@ -42,7 +21,7 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - /opt/lala-tv/sonarr:/config
-      - /data:/data
+      - /mnt/media-archive:/mnt/media-archive
     ports:
       - "8989:8989"
     networks:
@@ -61,7 +40,7 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - /opt/lala-tv/radarr:/config
-      - /data:/data
+      - /mnt/media-archive:/mnt/media-archive
     ports:
       - "7878:7878"
     networks:
@@ -95,7 +74,7 @@ services:
     restart: unless-stopped
     volumes:
       - /opt/lala-tv/rdt-client:/data/db
-      - /data/torrents:/data/downloads
+      - /mnt/media-archive/Downloads:/data/downloads
     ports:
       - "6500:6500"
     networks:
@@ -114,40 +93,24 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - /opt/lala-tv/bazarr:/config
-      - /data/media:/data/media
+      - /mnt/media-archive:/mnt/media-archive
     ports:
       - "6767:6767"
     networks:
       - lala-tv
 
   # ============================================
-  # FLARESOLVERR - Cloudflare Bypass for Indexers
+  # TWEAKIO - Torrentio Torznab Proxy
+  # Aggregates 12+ public indexers (1337x, YTS,
+  # EZTV, RARBG, TPB, etc.) via Torrentio API.
+  # No Cloudflare issues. Replaces FlareSolverr.
   # ============================================
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
+  tweakio:
+    image: varthe/tweakio:latest
+    container_name: tweakio
     restart: unless-stopped
-    environment:
-      - LOG_LEVEL=info
-      - TZ=Asia/Kolkata
     ports:
-      - "8191:8191"
-    networks:
-      - lala-tv
-
-  # ============================================
-  # SEERR - Media Request Management UI
-  # ============================================
-  seerr:
-    image: ghcr.io/seerr/seerr:latest
-    container_name: seerr
-    restart: unless-stopped
-    environment:
-      - TZ=Asia/Kolkata
-    volumes:
-      - /opt/lala-tv/seerr:/app/config
-    ports:
-      - "5055:5055"
+      - "3185:3185"
     networks:
       - lala-tv
 

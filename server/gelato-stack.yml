@@ -1,0 +1,69 @@
+# Lala TV - Gelato + Comet + AIOStreams Stack
+# Adds instant Real-Debrid streaming directly inside Jellyfin
+# Deploy on GPU server alongside existing docker-compose.yml
+
+services:
+  # ============================================
+  # COMET - Stremio Torrent/Debrid Search Engine
+  # Searches torrents, resolves via Real-Debrid
+  # ============================================
+  comet:
+    container_name: comet
+    image: g0ldyy/comet
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_TYPE=postgresql
+      - DATABASE_URL=comet:comet@comet-postgres:5432/comet
+      - ADMIN_DASHBOARD_PASSWORD=Rama1994
+    volumes:
+      - /opt/lala-tv/comet:/app/data
+    depends_on:
+      comet-postgres:
+        condition: service_healthy
+    networks:
+      - lala-tv
+
+  comet-postgres:
+    container_name: comet-postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=comet
+      - POSTGRES_PASSWORD=comet
+      - POSTGRES_DB=comet
+    volumes:
+      - /opt/lala-tv/comet-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comet -d comet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lala-tv
+
+  # ============================================
+  # AIOSTREAMS - Stremio Addon Aggregator
+  # Mandatory middleware between Gelato and Comet
+  # ============================================
+  aiostreams:
+    container_name: aiostreams
+    image: ghcr.io/viren070/aiostreams:latest
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - ADDON_NAME=AIOStreams
+      - PORT=3000
+      - BASE_URL=http://aiostreams:3000
+      - DATABASE_URI=sqlite:///app/data/db.sqlite
+    volumes:
+      - /opt/lala-tv/aiostreams:/app/data
+    networks:
+      - lala-tv
+
+networks:
+  lala-tv:
+    name: lala-tv
+    external: true
