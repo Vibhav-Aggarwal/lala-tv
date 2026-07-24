@@ -16,7 +16,7 @@ services:
     environment:
       - DATABASE_TYPE=postgresql
       - DATABASE_URL=comet:comet@comet-postgres:5432/comet
-      - ADMIN_DASHBOARD_PASSWORD=Rama1994
+      - ADMIN_DASHBOARD_PASSWORD=CHANGE_ME_STRONG_PASSWORD
     volumes:
       - /opt/lala-tv/comet:/app/data
     depends_on:
